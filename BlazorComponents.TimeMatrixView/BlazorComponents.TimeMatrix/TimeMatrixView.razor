@@ -1,0 +1,698 @@
+﻿@using Microsoft.JSInterop;
+@using System.Globalization;
+@using System.Text.Json;
+
+@inject IJSRuntime jsRuntime
+
+
+<style>
+    .cell-summary-bg-event {
+        padding: 4px;
+        border-radius: 5px;
+        margin-bottom: 4px;
+    }
+
+        .cell-summary-bg-event p {
+            padding: 0;
+            margin: 0;
+        }
+
+    .cell-summary-event {
+        padding: 4px;
+        border-radius: 5px;
+        margin-bottom: 4px;
+        border-top:6px solid;
+    }
+
+        .cell-summary-event p {
+        }
+
+</style>
+
+<div class="matrix-view">
+
+    <svg id="@SvgId">
+    </svg>
+
+</div>
+
+@if (this.hoverCell != null)
+{
+    <div class="cell-summary-wrapper" style="max-width:260px;padding:6px;border-radius:6px; border:2px solid black; ">
+        <div class="cell-summary-content" style="display:flex;flex-direction:column;">
+            <div style="text-align:right;">@this.hoverCell.DisplayTime</div>
+            @foreach (var bge in this.hoverCell.BGEvents)
+            {
+                <div class="cell-summary-bg-event" style="background-color:@bge.Color">
+                    <p><span style="font-size: 24px;">@bge.Title</span><span style="font-size: 14px;text-align:right;">@bge.DisplayTime</span></p>
+                    <p>@bge.Summary</p>
+                </div>
+            }
+            @foreach (var ev in this.hoverCell.Events)
+            {
+                <div class="cell-summary-event" style="border-top-color:@ev.Color">
+                    <p><span style="font-size: 24px;">@ev.Title</span><span style="font-size: 14px;text-align:right;">@ev.DisplayTime</span></p>
+                    <p>@ev.Summary</p>
+                </div>
+
+            }
+        </div>
+    </div>
+}
+
+
+@code {
+
+
+    private DotNetObjectReference<TimeMatrixView>? timeMatrixViewRef;
+    private MatrixViewJsInterop matrixViewJsInterop;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+
+        matrixViewJsInterop = new MatrixViewJsInterop(jsRuntime);
+
+        this.mConfig = new MatrixConfig()
+            {
+                MatrixDisplayMode = this.MatrixDisplayMode,
+                MatrixWidth = this.MatrixWidth,
+            };
+        await base.OnInitializedAsync();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            //用于在js中调用的引用
+            timeMatrixViewRef = DotNetObjectReference.Create(this);
+
+            await jsRuntime.InvokeVoidAsync("register_dotnet_matrixViewObjRef", timeMatrixViewRef);
+
+        }
+
+        await base.OnAfterRenderAsync(firstRender);
+    }
+
+
+
+    [Parameter]
+    public string SvgId { get; set; } = "time-matrix-view-svg-container";
+
+    //列数
+    [Parameter]
+    public int MatrixWidth { get; set; } = 20;
+
+    //matrix显示模式
+    [Parameter]
+    public eMatrixDisplayMode MatrixDisplayMode { get; set; } = eMatrixDisplayMode.num;
+
+    //单位名称
+    [Parameter]
+    public string UnitName { get; set; } = "";
+
+    //默认背景色
+    [Parameter]
+    public string[] DefaultBGColors { get; set; } = new string[] { };
+
+    //默认line颜色
+    [Parameter]
+    public string[] DefaultLineColors { get; set; } = new string[] { };
+
+    //默认instant颜色
+    [Parameter]
+    public string[] DefaultInstantColors { get; set; } = new string[] { };
+
+    [Parameter]
+    public bool EnableHoverSummary { get; set; } = false;
+
+
+    //获取当前所有事件的标签
+    public async Task<List<string>> GetAllTags()
+    {
+        throw new NotImplementedException();
+    }
+
+
+    //绘制视图
+    public async Task DrawMatrixAsync(params EventSeries[] eventSeries)
+    {
+
+        this.eventSeriesList.Clear();
+        this.eventList.Clear();
+        this.createdCellEvents.Clear();
+
+        this.eventSeriesList.AddRange(eventSeries);
+
+        foreach (var es in eventSeries)
+        {
+            this.eventList.AddRange(es.Events);
+        }
+
+
+        //获取包含配置信息的 matrixdata
+        var matrixData = buildMatrixData(mConfig, this.eventSeriesList);
+
+
+        //传递 svg id  与 参数
+        await matrixViewJsInterop.DrawTimeMatrixAsync(this.SvgId, matrixData);
+
+    }
+
+
+    //根据事件中的tag高亮对应事件
+    public async void HighlightTag(string tag)
+    {
+
+    }
+
+
+
+
+
+    [JSInvokable]
+    public void triggerHoverEvent(int cell_val, int pointx, int pointy)
+    {
+        var hover_cell = this.matrixData.cells.Where(c => c.val == cell_val).FirstOrDefault();
+
+        if (hover_cell == null)
+        {
+            return;
+        }
+
+
+        if (this.EnableHoverSummary)
+        {
+            //设置显示summary
+            this.hoverCell = this.getCellEventData(cell_val, pointx, pointy);
+            this.StateHasChanged();
+        }
+
+
+
+    }
+
+    [JSInvokable]
+    public void triggerClickEvent()
+    {
+
+    }
+
+    [JSInvokable]
+    public void triggerHoverInEvent()
+    {
+
+    }
+
+    [JSInvokable]
+    public void triggerHoverOutEvent()
+    {
+
+    }
+
+
+
+    public List<string> tags = new List<string>();
+
+    private MatrixData matrixData;
+
+    private List<EventSeries> eventSeriesList = new List<EventSeries>();
+
+    private List<Event> eventList = new List<Event>();
+
+    private MatrixConfig mConfig = new MatrixConfig();
+
+
+    //与ui相关的属性
+    private CellEventData hoverCell { get; set; } = null;
+
+
+    #region 构建 matrix data 方法
+
+
+    //构建matrixdata
+    private MatrixData buildMatrixData(MatrixConfig matrixConfig, List<EventSeries> event_series_list)
+    {
+        // 获取单位并检查 es的单位是否都一致
+        if (event_series_list.Count == 0)
+        {
+            throw new ArgumentException("eventSeries is empty");
+        }
+
+        var timeunits = event_series_list.Select(es => es.TimeUnit).Distinct();
+
+        if (timeunits.Count() > 1)
+        {
+            throw new ArgumentException("eventSeries has multiple timeunits");
+        }
+
+        var timeunit = timeunits.First();
+
+        //检查 时间单位 与 matrix display mode 是否匹配
+        if (timeunit == eTimeUnit.Day
+            && (matrixConfig.MatrixDisplayMode == eMatrixDisplayMode.decade || matrixConfig.MatrixDisplayMode == eMatrixDisplayMode.century))
+        {
+            throw new ArgumentException("若时间单位为 day，则显示模式不能为 decade 或 century");
+        }
+
+        if (timeunit == eTimeUnit.Year
+            && (matrixConfig.MatrixDisplayMode == eMatrixDisplayMode.week || matrixConfig.MatrixDisplayMode == eMatrixDisplayMode.month))
+        {
+            throw new ArgumentException("若时间单位为 day，则显示模式不能为 decade 或 century");
+        }
+
+        //若unit 为 custom 则忽略 display mode 配置，默认为 num
+
+        //获取时间单位名称
+        var esUnitNames = event_series_list.Select(es => es.UnitName).Distinct();
+
+        if (timeunits.Count() > 1)
+        {
+            throw new ArgumentException("eventSeries unitnames are not same");
+        }
+
+        var unitname = esUnitNames.First();
+
+        //获取最大值 与最小值,生成所有cell
+        var matrixData = this.matrixData = new MatrixData()
+            {
+                display_mode = matrixConfig.MatrixDisplayMode,
+                matrix_width = matrixConfig.MatrixWidth,
+                time_unit = timeunit,
+                unit_name = unitname, //该参数只有在 unit为 custom时有用
+            };
+
+        //获取最大和最小的 时间值
+        var minVal = event_series_list.Select(es => es.GetMinVal()).Min();
+        var maxVal = event_series_list.Select(es => es.GetMaxVal()).Max();
+
+        //最后确定
+        var (matrix_initail_val, matrix_width) = getMatrixInitialValAndWidth(minVal, timeunit, mConfig);
+
+
+        //生成matrix的cells， 确保cells中的cell是按照val进行排序的！
+        if (timeunit == eTimeUnit.Day && mConfig.MatrixDisplayMode == eMatrixDisplayMode.month)
+        {
+            var fisrt_date = DateOnly.FromDayNumber(matrix_initail_val);
+            var end_date = DateOnly.FromDayNumber(maxVal);
+            initialMatrixCellsForModeMonth(matrixData, fisrt_date, end_date);
+        }
+        else
+        {
+            initialMatrixCells(matrixData, matrix_initail_val, maxVal, matrix_width.Value);
+        }
+
+        bool bgesfilled = false;
+        //遍历所有es，先构建所有 line event ，
+        foreach (var es in event_series_list)
+        {
+
+
+            if (es.isBG && !bgesfilled) //只能填充一个背景es
+            {
+                fillBGEventSeriesToMatrix(matrixData, es);
+                //填充默认颜色
+                es.SortAndFillDefaultColor(this.DefaultBGColors);
+
+                bgesfilled = true;
+            }
+            else if (!es.isBG)
+            {
+                fillEventSeriesToMatrix(matrixData, es);
+            }
+        }
+
+        return matrixData;
+
+    }
+
+    //初始化 matrix cells
+    private void initialMatrixCellsForModeMonth(MatrixData matrix_data, DateOnly firstDate, DateOnly endDate)
+    {
+        int line = 0;
+        int col = 0;
+        int? line_month_days = null;
+        Calendar cal = CultureInfo.InvariantCulture.Calendar;
+
+        DateOnly currentDate = firstDate;
+
+        while (currentDate <= endDate)
+        {
+            matrixData.cells.Add(new Cell()
+                {
+                    l = line,
+                    c = col,
+                    val = currentDate.DayNumber,
+                });
+
+            //判断行增加
+            if (!line_month_days.HasValue) //设置当前行的 cell 的数量
+            {
+                line_month_days = cal.GetDaysInMonth(currentDate.Month, currentDate.Day);
+
+                matrix_data.cells.Add(new Cell()
+                    {
+                        c = col,
+                        l = line,
+                        val = currentDate.DayNumber
+                    });
+                col++;
+
+            }
+            else if (col < line_month_days.Value) // 若当前行在本月内
+            {
+                matrix_data.cells.Add(new Cell()
+                    {
+                        c = col,
+                        l = line,
+                        val = currentDate.DayNumber
+                    });
+                col++;
+            }
+            else if (col == line_month_days.Value) //当前月份的最后一天，需要将 line_month_days重置为 null
+            {
+                matrix_data.cells.Add(new Cell()
+                    {
+                        c = col,
+                        l = line,
+                        val = currentDate.DayNumber
+                    });
+                line_month_days = null; //重置行天数
+                line++;
+                col = 0;
+            }
+
+            currentDate = currentDate.AddDays(1);
+        }
+
+        matrix_data.matrix_lineCount = line + 1;
+
+
+    }
+
+    //初始化 matrix cells
+    private void initialMatrixCells(MatrixData matrix_data, int first_val, int max_val, int matrix_width)
+    {
+        int line = 0;
+        int col = 0;
+
+
+        for (var v = first_val; v <= max_val; v++)
+        {
+            //当单位为年，并且值为0时 跳过 因为没有公元0年的
+            if (v == 0 && matrix_data.time_unit == eTimeUnit.Year)
+            {
+                continue;
+            }
+
+            matrix_data.cells.Add(new Cell()
+                {
+                    c = col,
+                    l = line,
+                    val = v,
+
+
+                });
+
+            if (col == matrix_width - 1)
+            {
+                col = 0;
+                line++;
+            }
+            else
+            {
+                col++;
+            }
+        }
+
+        matrix_data.matrix_lineCount = line + 1;
+
+    }
+
+    //获取 matrix 的初始值和宽度
+    private (int, int?) getMatrixInitialValAndWidth(int start_val, eTimeUnit timeUnit, MatrixConfig mconfig)
+    {
+
+        if (timeUnit == eTimeUnit.Day && mconfig.MatrixDisplayMode == eMatrixDisplayMode.week)
+        {
+            //获取其实start val 对应的那一周，  然后获取这一周的周一对应的 val
+            var event_start_date = DateOnly.FromDayNumber(start_val);
+            //0 sunday 1 monday 6 saturday
+            var matrix_0_0_date = this.getFirstDayOfWeek(event_start_date);
+            return (matrix_0_0_date.DayNumber, 7);
+        }
+        else if (timeUnit == eTimeUnit.Day && mconfig.MatrixDisplayMode == eMatrixDisplayMode.month)
+        {
+            //获取其实start val 对应的那一周，  然后获取这一周的周一对应的 val
+            var event_start_date = DateOnly.FromDayNumber(start_val);
+            //获取其实start val 对应的那一个月, 然后获取这一个月 1号 对应的 val
+            var matrix_0_0_date = event_start_date.AddDays(-(event_start_date.Day - 1));
+            return (matrix_0_0_date.DayNumber, null);
+        }
+        else if (timeUnit == eTimeUnit.Year && mconfig.MatrixDisplayMode == eMatrixDisplayMode.decade)
+        {
+            //获取 start_val 所在年代的首年
+            var yearofdecade = start_val % 10;
+            return (start_val - yearofdecade, 10);
+
+        }
+        else if (timeUnit == eTimeUnit.Year && mconfig.MatrixDisplayMode == eMatrixDisplayMode.century)
+        {
+            //获取 start_val 所在世纪的首年 1980  -> 1900
+            var yearofcentury = start_val % 100;
+            return (start_val - yearofcentury, 100);
+
+        }
+        else
+        {
+            return (start_val, mconfig.MatrixWidth);
+        }
+
+
+    }
+
+    //填充事件线mark
+    private void fillEventSeriesToMatrix(MatrixData matrix_data, EventSeries es)
+    {
+        if (es.isBG)
+        {
+            throw new ArgumentException("es is a bg event series");
+        }
+
+        //按照 cell 顺序进行填充，同时也保证了 event 也按照顺序填充
+        foreach (var cell in matrix_data.cells)
+        {
+
+            //仅处理 occur 为该 cell val 的事件 ,  性能：该where需要执行 cell数量的次数。。
+            var cell_evnts = es.Events.Where(e => e.Occur == cell.val).ToList();
+
+            foreach (var evnt in cell_evnts)
+            {
+
+                if (evnt.End.HasValue)
+                {
+                    var selected_seq = cell.GetCellValidSeq();
+
+                    if (selected_seq < 0)//未找到可用的seq，跳过渲染
+                    {
+                        continue;
+                    }
+
+                    foreach (var val in Enumerable.Range(evnt.Occur, (evnt.End.Value - evnt.Occur + 1)))
+                    {
+                        var val_cell = matrix_data.cells.Where(c => c.val == val).FirstOrDefault();
+
+                        if (val_cell == null)
+                        {
+                            throw new Exception("matrix cells 生成错误，无法找到事件对应的 cell");
+                        }
+
+                        //在当前 event 起止范围内，每个数值创建一个 event mark
+                        var newmark = new EventMark()
+                            {
+                                val = val_cell.val,
+                                display_time = evnt.DisplayTime,
+                                c = val_cell.c,
+                                l = val_cell.l,
+                                esid = es.Id,
+                                eid = evnt.Id,
+                                color = evnt.Color,
+                                seq = selected_seq,
+                                slot = -1,
+                            };
+
+                        if (val == evnt.Occur) //start
+                        {
+                            newmark.type = eEventMarkType.start;
+                        }
+                        else if (val == evnt.End.Value) //end
+                        {
+                            newmark.type = eEventMarkType.end;
+                        }
+                        else // ongoing
+                        {
+                            newmark.type = eEventMarkType.ongoing;
+                        }
+
+                        val_cell.marks.Add(newmark);
+
+                    }
+
+                }
+                else
+                {
+
+                    var seleced_slot = cell.GetCellValidSlot();
+
+                    //若seleced_slot > 2 则忽略该 event ， 不进行添加，因为位置不够
+
+                    cell.marks.Add(new EventMark()
+                        {
+                            val = cell.val,
+                            c = cell.c,
+                            l = cell.l,
+                            esid = es.Id,
+                            eid = evnt.Id,
+                            slot = seleced_slot,
+                            type = eEventMarkType.instant,
+                            display_time = evnt.DisplayTime,
+                            color = evnt.Color,
+                        });
+                }
+
+            }
+
+        }
+
+
+    }
+
+    //填充背景事件到matrix data
+    private void fillBGEventSeriesToMatrix(MatrixData matrix_data, EventSeries es)
+    {
+        if (!es.isBG)
+        {
+            throw new ArgumentException("es is a not bg event series");
+        }
+
+        foreach (var evnt in es.Events)
+        {
+            if (evnt.End.HasValue)
+            {
+                var matched_cells = matrix_data.cells.Where(c => c.val >= evnt.Occur && c.val <= evnt.End).ToList();
+
+                foreach (var cell in matched_cells)
+                {
+                    if (cell.bg_events.Count < 2)
+                    {
+                        cell.bg_events.Add(evnt);
+                    }
+
+                }
+            }
+            else
+            {
+                var matched_cell = matrix_data.cells.Where(c => c.val == evnt.Occur).FirstOrDefault();
+
+                if (matched_cell != null)
+                {
+                    if (matched_cell.bg_events.Count < 2)
+                    {
+                        matched_cell.bg_events.Add(evnt);
+                    }
+                }
+
+            }
+        }
+
+    }
+
+    //获取 dateonly 的 week信息
+    private DateOnly getFirstDayOfWeek(DateOnly date)
+    {
+
+        switch (date.DayOfWeek)
+        {
+            case DayOfWeek.Monday:
+                return date;
+            case DayOfWeek.Tuesday:
+                return date.AddDays(-1);
+            case DayOfWeek.Wednesday:
+                return date.AddDays(-2);
+            case DayOfWeek.Thursday:
+                return date.AddDays(-3);
+            case DayOfWeek.Friday:
+                return date.AddDays(-4);
+            case DayOfWeek.Saturday:
+                return date.AddDays(-5);
+            case DayOfWeek.Sunday:
+                return date.AddDays(-6);
+            default:
+                return date;
+        }
+
+    }
+
+
+    #endregion
+
+
+    private Dictionary<int, CellEventData> createdCellEvents = new Dictionary<int, CellEventData>();
+
+    private CellEventData getCellEventData(int cell_val, int pointerx, int pointery)
+    {
+        CellEventData ced = null;
+
+        if (this.createdCellEvents.Any(kvp => kvp.Key == cell_val))
+        {
+            ced = this.createdCellEvents[cell_val];
+            ced.X = pointerx;
+            ced.Y = pointery;
+            return ced;
+        }
+
+        var hover_cell = this.matrixData.cells.Where(c => c.val == cell_val).FirstOrDefault();
+
+        if (hover_cell != null)
+        {
+            ced = new CellEventData()
+                {
+                    Cell = hover_cell,
+                    X = pointerx,
+                    Y = pointery
+                };
+
+            //设置ced的显示时间
+            ced.SetDisplayTime(this.matrixData.time_unit, this.matrixData.unit_name);
+
+            ced.BGEvents.AddRange(hover_cell.bg_events);
+
+            var eids = hover_cell.marks.Select(m => m.eid).ToList();
+
+            foreach (var eid in eids)
+            {
+                ced.Events.AddRange(this.eventList.Where(e => eids.Contains(e.Id)).ToList());
+            }
+
+            //添加前再检查一次，防止因调用频率过快出现重复添加
+            if (!this.createdCellEvents.Any(kvp => kvp.Key == cell_val))
+            {
+                this.createdCellEvents.Add(cell_val, ced);
+            }
+
+            return ced;
+
+        }
+
+        return null;
+    }
+
+
+
+    public void Dispose()
+    {
+        //循环？
+        timeMatrixViewRef?.Dispose();
+    }
+}

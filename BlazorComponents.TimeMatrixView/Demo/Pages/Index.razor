@@ -1,0 +1,62 @@
+﻿@page "/"
+
+@using BlazorComponents.TimeMatrix;
+@using System.Text.Json;
+@using System.Text.Json.Serialization;
+@using System.Net.Http
+
+
+@inject HttpClient http
+
+
+<PageTitle>Index</PageTitle>
+
+@*<HeadContent>
+    <script type="text/javascript" src="_content/BlazorComponents.TimeMatrix/d3js.org_d3.v7.js"></script>
+</HeadContent>*@
+
+
+<h1>Hello, world!</h1>
+
+@* Welcome to your new app. *@
+
+@*  <SurveyPrompt Title="How is Blazor working for you?" /> *@
+<div style="margin-bottom:160px;">
+    <TimeMatrixView @ref="timeMatrixView" MatrixWidth="40" EnableHoverSummary=true DefaultBGColors=@(new string[]{"#d4efff","#ffddc8"})></TimeMatrixView>
+</div>
+<div>
+    <p>TODOs:</p>
+    <p>数据整理</p>
+    <p>交互开发，hover 与 单击事件</p>
+    <p></p>
+</div>
+
+@code {
+
+    private TimeMatrixView timeMatrixView;
+
+    protected override async void OnAfterRender(bool firstRender)
+    {
+        base.OnAfterRender(firstRender);
+
+        var resp = await http.GetAsync("data/es_zh.json");
+
+        var json = await resp.Content.ReadAsStringAsync();
+
+        var es = EventSeries.FromJson(json);
+
+
+        var resp1 = await http.GetAsync("data/es_zh_big.json");
+
+        var json1 = await resp1.Content.ReadAsStringAsync();
+
+        var es1 = EventSeries.FromJson(json1);
+
+
+        //测试 es
+        if (firstRender)
+        {
+            await this.timeMatrixView.DrawMatrixAsync(es, es1);
+        }
+    }
+}

@@ -1,0 +1,31 @@
+{
+  "id": "08f7209b-db9a-400a-bc14-58f30f43e069",
+  "title": "中华大事件",
+  "display_time": "约公元前2070年~今",
+  "summary": "简述近五千年文明的历史长河",
+  "thumb": "",
+  "time_unit": "year",
+  "unit_name": "年",
+  "isbg": false,
+  "events": [
+    {
+      "occur": -2070,
+      "end": -2068,
+      "title": "test line",
+      "display_time": "约公元前2070年~约公元前1600",
+      "tags": [ "tag1", "tag2" ],
+      "summary": "",
+      "content": "",
+      "color": "#2caf3a"
+    },
+    {
+      "occur": -2067,
+      "title": "test instant",
+      "display_time": "约公元前2070年~约公元前1600",
+      "tags": [ "tag1", "tag2" ],
+      "summary": "",
+      "content": "",
+      "color": "#2caf3a"
+    }
+  ]
+}

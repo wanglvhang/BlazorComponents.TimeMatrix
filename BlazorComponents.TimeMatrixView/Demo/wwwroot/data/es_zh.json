@@ -1,0 +1,243 @@
+{
+  "id": "659e3b97-93ba-4d78-9d2e-3c81d2d0451c",
+  "title": "中华朝代简史",
+  "display_time": "约公元前2070年~今",
+  "summary": "简述近五千年文明的历史长河",
+  "thumb": "",
+  "time_unit": "year",
+  "unit_name": "年",
+  "isbg": true,
+  "events": [
+    {
+      "occur": -2070,
+      "end": -1600,
+      "title": "夏",
+      "display_time": "约前2070年~前1600",
+      "tags": [ "tag1", "tag2" ],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": -1600,
+      "end": -1046,
+      "title": "商",
+      "display_time": "约前1600年~约前1046",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": -1046,
+      "end": -771,
+      "title": "西周",
+      "display_time": "前1046年~前771",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": -770,
+      "end": -476,
+      "title": "春秋(东周)",
+      "display_time": "前770年~前476",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": -476,
+      "end": -221,
+      "title": "战国(东周)",
+      "display_time": "前476年~前221",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": -221,
+      "end": -207,
+      "title": "秦",
+      "display_time": "前221年~前207",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": -202,
+      "end": 8,
+      "title": "西汉",
+      "display_time": "前202年~8年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 9,
+      "end": 23,
+      "title": "新朝/新莽",
+      "display_time": "前9年~23年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 25,
+      "end": 220,
+      "title": "东汉",
+      "display_time": "前25年~220年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 220,
+      "end": 265,
+      "title": "三国",
+      "display_time": "220年~265年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 265,
+      "end": 316,
+      "title": "西晋",
+      "display_time": "265年~316年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 317,
+      "end": 420,
+      "title": "东晋",
+      "display_time": "317年~420年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 420,
+      "end": 589,
+      "title": "南北朝",
+      "display_time": "420年~589年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 581,
+      "end": 619,
+      "title": "隋",
+      "display_time": "581年~619年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 618,
+      "end": 907,
+      "title": "唐",
+      "display_time": "618年~907年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 907,
+      "end": 979,
+      "title": "五代十国",
+      "display_time": "907年~979年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 960,
+      "end": 1127,
+      "title": "北宋",
+      "display_time": "960年~1127年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 1127,
+      "end": 1279,
+      "title": "南宋",
+      "display_time": "1127年~1279年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 1271,
+      "end": 1368,
+      "title": "元",
+      "display_time": "1271年~1368年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 1368,
+      "end": 1644,
+      "title": "明",
+      "display_time": "1368年~1644年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 1644,
+      "end": 1912,
+      "title": "清",
+      "display_time": "1644年~1912年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 1912,
+      "end": 1949,
+      "title": "中华民国",
+      "display_time": "1912年~1949年",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    },
+    {
+      "occur": 1949,
+      "end": "now",
+      "title": "中华人民共和国",
+      "display_time": "1949年~今",
+      "tags": [],
+      "summary": "",
+      "content": "",
+      "color": ""
+    }
+  ]
+
+}
