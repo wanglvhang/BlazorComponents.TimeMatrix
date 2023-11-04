@@ -31,6 +31,10 @@ var instant_rx = 1;
 var instant_gap = 1;
 
 
+//是否有cell选中
+var is_cell_selected = false;
+
+
 
 //创建 time marix  (list)
 export function drawTimeMatrix(svgid, matrixData) {
@@ -57,20 +61,49 @@ export function drawTimeMatrix(svgid, matrixData) {
             .attr("pointer-events", "all")
             .style("cursor", "pointer")
             .on("mouseover", (e, d) => {
-                //console.log(e); console.log(d);
+
+                //若启用选中则不触发高亮
+                console.log(is_cell_selected);
+                if (is_cell_selected) {
+                    return;
+                }
+
                 //hover事件，启用事件高亮，并显示简要信息
                 highlightCell(e);
-                //console.log(e);
+                //
+                var summary_x = Math.round(e.srcElement.getBoundingClientRect().left + cell_width * 2 / 3);
+                var summary_y = Math.round(e.srcElement.getBoundingClientRect().top + cell_width * 2 / 3);
+                dotnet_matrixview_objref.invokeMethodAsync('triggerHoverEvent', d.val, summary_x, summary_y);
+
             })
             .on("mouseout", (e, d) => {
+
+                if (is_cell_selected) {
+                    return;
+                }
+
                 //离开事件，取消高亮，移除对应简要信息
                 deHighlightCell(e)
+
+                dotnet_matrixview_objref.invokeMethodAsync('triggerHoverOutEvent', d.val);
+
             })
             .on("click", (e, d) => {
-                console.log(e);
-                console.log(d);
-                dotnet_matrixview_objref.invokeMethodAsync('triggerHoverEvent', d.val, e.pageX, e.pageY);
-                
+
+                //
+                if (is_cell_selected) {
+                    return;
+                }
+
+                //获取对应cell坐标
+                var summary_x = Math.round(e.srcElement.getBoundingClientRect().left + cell_width * 2 / 3);
+                var summary_y = Math.round(e.srcElement.getBoundingClientRect().top + cell_width * 2 / 3);
+
+                dotnet_matrixview_objref.invokeMethodAsync('triggerClickEvent', d.val, summary_x, summary_y);
+
+                is_cell_selected = true;
+                selectCell(e);
+
             });
 
         if (c.bg_events.length == 0) {
@@ -132,6 +165,14 @@ export function drawTimeMatrix(svgid, matrixData) {
 
     });
 
+}
+
+export function unselectCell(cell_val) {
+    //console.log("unselected called");
+    //console.log(this);
+    //console.log(globalThis);
+    is_cell_selected = false;
+    d3.select(`#cell_${cell_val}`).style("stroke-width", "0px").style("stroke", "#000000");
 }
 
 
@@ -235,15 +276,21 @@ function getBGPolygonPoints(cell, idx) {
 
 
 function highlightCell(event) {
-    //console.log(cell);
-    //d3.select(`#cell_${cell.val}`).style("stroke-width", "3px").style("stroke", "#e74d22");
-    d3.select(event.srcElement).style("stroke-width", "3px").style("stroke", "#e74d22");
+
+    d3.select(event.srcElement).style("stroke-width", "1px").style("stroke", "#929292");
+
 }
 
 function deHighlightCell(event) {
-    //d3.select(`#cell_${cell.val}`).style("stroke-width", "0px").style("stroke", "#000000");
 
     d3.select(event.srcElement).style("stroke-width", "0px").style("stroke", "#000000");
+
+}
+
+
+function selectCell(event) {
+    //设置选中颜色
+    d3.select(event.srcElement).style("stroke-width", "1px").style("stroke", "#ff551d");
 }
 
 
@@ -257,14 +304,6 @@ function hideCellSummary(cell) {
 }
 
 
-
-
-//hover event //click event
-
-//timeMatrixViewRef.invokeMethodAsync('triggerHoverEvent', name); ???
-//timeMatrixViewRef.invokeMethodAsync('triggerClickEvent', name);
-//timeMatrixViewRef.invokeMethodAsync('triggerHoverInEvent', name);
-//timeMatrixViewRef.invokeMethodAsync('triggerHoverOutEvent', name);
 
 
 

@@ -1,4 +1,5 @@
 using Microsoft.JSInterop;
+using System;
 
 namespace BlazorComponents.TimeMatrix
 {
@@ -22,14 +23,21 @@ namespace BlazorComponents.TimeMatrix
         }
 
 
-        //
-        internal async Task<string>  DrawTimeMatrixAsync(string svgid, MatrixData matrixData)
+        //绘制matrix
+        internal async Task DrawTimeMatrixAsync(string svgid, MatrixData matrixData)
         {
             var module = await moduleTask.Value;
             //传递list参数
-            return await module.InvokeAsync<string>("drawTimeMatrix",svgid, matrixData);
+            await module.InvokeVoidAsync("drawTimeMatrix",svgid, matrixData);
         }
 
+        
+        internal async Task UnselectCell(int cell_val)
+        {
+            var module = await moduleTask.Value;
+            //传递list参数
+            await module.InvokeVoidAsync("unselectCell",cell_val);
+        }
 
 
         public async ValueTask DisposeAsync()

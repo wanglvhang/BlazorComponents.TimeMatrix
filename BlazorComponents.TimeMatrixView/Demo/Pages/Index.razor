@@ -11,19 +11,23 @@
 
 <PageTitle>Index</PageTitle>
 
-@*<HeadContent>
-    <script type="text/javascript" src="_content/BlazorComponents.TimeMatrix/d3js.org_d3.v7.js"></script>
-</HeadContent>*@
-
 
 <h1>Hello, world!</h1>
 
 @* Welcome to your new app. *@
 
 @*  <SurveyPrompt Title="How is Blazor working for you?" /> *@
-<div style="margin-bottom:160px;">
-    <TimeMatrixView @ref="timeMatrixView" MatrixWidth="40" EnableHoverSummary=true DefaultBGColors=@(new string[]{"#d4efff","#ffddc8"})></TimeMatrixView>
+<div style="display:flex;flex-direction:row;margin-bottom:160px;">
+
+    <div style="flex:auto">
+        <TimeMatrixView @ref="timeMatrixView" MatrixWidth="40" EnableHoverSummary=true DefaultBGColors=@(new string[]{"#d4efff","#ffddc8"})></TimeMatrixView>
+    </div>
+
+    <div style="flex:auto;height:500px;">
+    </div>
 </div>
+
+
 <div>
     <p>TODOs:</p>
     <p>数据整理</p>

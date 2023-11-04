@@ -5,29 +5,9 @@
 @inject IJSRuntime jsRuntime
 
 
-<style>
-    .cell-summary-bg-event {
-        padding: 4px;
-        border-radius: 5px;
-        margin-bottom: 4px;
-    }
-
-        .cell-summary-bg-event p {
-            padding: 0;
-            margin: 0;
-        }
-
-    .cell-summary-event {
-        padding: 4px;
-        border-radius: 5px;
-        margin-bottom: 4px;
-        border-top:6px solid;
-    }
-
-        .cell-summary-event p {
-        }
-
-</style>
+@*  <HeadContent>
+     <link href="BlazorComponents.TimeMatrix.styles.css" rel="stylesheet">
+ </HeadContent> *@
 
 <div class="matrix-view">
 
@@ -36,28 +16,42 @@
 
 </div>
 
-@if (this.hoverCell != null)
+@if (this.focusedCell != null)
 {
-    <div class="cell-summary-wrapper" style="max-width:260px;padding:6px;border-radius:6px; border:2px solid black; ">
-        <div class="cell-summary-content" style="display:flex;flex-direction:column;">
-            <div style="text-align:right;">@this.hoverCell.DisplayTime</div>
-            @foreach (var bge in this.hoverCell.BGEvents)
+    <div class="cell-summary-wrapper"
+         style="pointer-events:@(this.isCellSelected?"all":"none"); top:@(this.focusedCell.Y)px;left:@(this.focusedCell.X)px; border-color:@(this.isCellSelected?"#ff551d":"#929292")">
+        <div class="cell-summary-content" style="">
+            <div class="cell-summary-time">@this.focusedCell.DisplayTime</div>
+            @foreach (var bge in this.focusedCell.BGEvents)
             {
                 <div class="cell-summary-bg-event" style="background-color:@bge.Color">
-                    <p><span style="font-size: 24px;">@bge.Title</span><span style="font-size: 14px;text-align:right;">@bge.DisplayTime</span></p>
-                    <p>@bge.Summary</p>
+                    @*                      <p>
+            <span style="font-size: 20px;">@bge.Title</span><br/>
+            <span style="font-size: 14px;text-align:right;">@bge.DisplayTime</span>
+            </p> *@
+                    <p style="font-size: 22px;line-height:22px; text-align:left;">@bge.Title</p>
+                    <p style="font-size: 14px;line-height:14px; text-align:right;">@bge.DisplayTime</p>
+                    @* <p>@bge.Summary</p> *@
                 </div>
             }
-            @foreach (var ev in this.hoverCell.Events)
+            @foreach (var ev in this.focusedCell.Events)
             {
-                <div class="cell-summary-event" style="border-top-color:@ev.Color">
-                    <p><span style="font-size: 24px;">@ev.Title</span><span style="font-size: 14px;text-align:right;">@ev.DisplayTime</span></p>
-                    <p>@ev.Summary</p>
+                <div class="cell-summary-event" style="border-color:@ev.Color">
+                    <p style="font-size: 24px;line-height:24px;">@ev.Title</p>
+                    <p style="font-size: 14px;line-height:14px;text-align:right;">@ev.DisplayTime</p>
+                    @*  <p>@ev.Summary</p> *@
                 </div>
-
             }
+            @if (isCellSelected)
+            {
+                <div style="text-align:center">
+                    <button style="color:white;" class="btn btn-warning btn-sm" @onclick="UnselectCell">取消选中</button>
+                </div>
+            }
+
         </div>
     </div>
+
 }
 
 
@@ -168,48 +162,71 @@
     }
 
 
+    public async void UnselectCell()
+    {
+        if (this.focusedCell != null)
+        {
+            await matrixViewJsInterop.UnselectCell(this.focusedCell.Cell.val);
+        }
+
+        this.isCellSelected = false;
+        this.focusedCell = null;
+
+        this.StateHasChanged();
+    }
+
+
 
 
 
     [JSInvokable]
     public void triggerHoverEvent(int cell_val, int pointx, int pointy)
     {
-        var hover_cell = this.matrixData.cells.Where(c => c.val == cell_val).FirstOrDefault();
 
-        if (hover_cell == null)
-        {
-            return;
-        }
-
-
-        if (this.EnableHoverSummary)
+        if (this.EnableHoverSummary && !this.isCellSelected)
         {
             //设置显示summary
-            this.hoverCell = this.getCellEventData(cell_val, pointx, pointy);
+            this.focusedCell = this.getCellEventData(cell_val, pointx, pointy);
             this.StateHasChanged();
         }
 
+        //触发外部事件
 
 
-    }
-
-    [JSInvokable]
-    public void triggerClickEvent()
-    {
 
     }
 
     [JSInvokable]
-    public void triggerHoverInEvent()
+    public void triggerHoverOutEvent(int cell_val)
     {
-
+        //当有选中的cell 时候，houver out 不起作用，保持 cell 选中状态
+        if (this.isCellSelected)
+        {
+            return;
+        }
+        else if (this.focusedCell != null)
+        {
+            this.focusedCell = null;
+            this.StateHasChanged();
+        }
     }
 
     [JSInvokable]
-    public void triggerHoverOutEvent()
+    public void triggerClickEvent(int cell_val, int cellx, int celly)
     {
+        //选中某个cell 并进入选中状态 1. 设置 isCellSelected = true  2. summary wrapper 的pointer-events 取消 none
+        //设置 selectedCell
+        var ced = this.getCellEventData(cell_val, cellx, celly);
+
+        if (ced != null)
+        {
+            this.isCellSelected = true;
+            this.focusedCell = ced;
+            this.StateHasChanged();
+        }
 
     }
+
 
 
 
@@ -225,7 +242,9 @@
 
 
     //与ui相关的属性
-    private CellEventData hoverCell { get; set; } = null;
+    private CellEventData focusedCell { get; set; } = null;
+
+    private bool isCellSelected { get; set; } = false;
 
 
     #region 构建 matrix data 方法
@@ -640,15 +659,15 @@
 
     private Dictionary<int, CellEventData> createdCellEvents = new Dictionary<int, CellEventData>();
 
-    private CellEventData getCellEventData(int cell_val, int pointerx, int pointery)
+    private CellEventData getCellEventData(int cell_val, int cellx, int celly)
     {
         CellEventData ced = null;
 
         if (this.createdCellEvents.Any(kvp => kvp.Key == cell_val))
         {
             ced = this.createdCellEvents[cell_val];
-            ced.X = pointerx;
-            ced.Y = pointery;
+            ced.X = cellx;
+            ced.Y = celly;
             return ced;
         }
 
@@ -659,8 +678,8 @@
             ced = new CellEventData()
                 {
                     Cell = hover_cell,
-                    X = pointerx,
-                    Y = pointery
+                    X = cellx,
+                    Y = celly
                 };
 
             //设置ced的显示时间
